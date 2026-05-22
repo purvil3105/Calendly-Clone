@@ -3,7 +3,15 @@ const availabilityController = require('../controllers/availability.controller.j
 
 const router = express.Router();
 
-router.get('/', availabilityController.getAvailability);
-router.put('/', availabilityController.updateAvailability);
+// Schedule CRUD
+router.get('/', availabilityController.getAllSchedules);
+router.post('/', availabilityController.createSchedule);
+router.put('/:id', availabilityController.updateSchedule);
+router.delete('/:id', availabilityController.deleteSchedule);
+
+// Date Override CRUD (nested under schedule)
+router.get('/:id/overrides', availabilityController.getOverrides);
+router.post('/:id/overrides', availabilityController.upsertOverride);
+router.delete('/:id/overrides/:overrideId', availabilityController.deleteOverride);
 
 module.exports = router;

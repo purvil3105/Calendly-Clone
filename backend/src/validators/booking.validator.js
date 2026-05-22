@@ -6,6 +6,7 @@ const bookMeetingSchema = z.object({
   inviteeEmail: z.string().email("Invalid email address"),
   inviteeTimezone: z.string().min(1),
   notes: z.string().optional(),
+  answers: z.record(z.string(), z.string()).optional(),
 });
 
 module.exports = {

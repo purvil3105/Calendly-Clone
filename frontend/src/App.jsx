@@ -10,6 +10,7 @@ import MeetingsPage from "./pages/admin/MeetingsPage";
 // Public Layout & Pages
 import PublicLayout from "./pages/public/PublicLayout";
 import BookingPage from "./pages/public/BookingPage";
+import ReschedulePage from "./pages/public/ReschedulePage";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           {/* Public Booking Routes */}
           <Route element={<PublicLayout />}>
             <Route path="/:slug" element={<BookingPage />} />
+            <Route path="/reschedule/:id" element={<ReschedulePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

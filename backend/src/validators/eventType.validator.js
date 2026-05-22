@@ -6,6 +6,14 @@ const eventTypeSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with dashes"),
   duration_min: z.number().int().positive(),
   description: z.string().optional(),
+  buffer_before: z.number().int().min(0).optional().default(0),
+  buffer_after: z.number().int().min(0).optional().default(0),
+  custom_questions: z.array(z.object({
+    id: z.string(),
+    label: z.string().min(1),
+    type: z.enum(['text', 'textarea']),
+    required: z.boolean(),
+  })).optional(),
 });
 
 module.exports = {

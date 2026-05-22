@@ -27,6 +27,7 @@ export default function BookingPage() {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [bookingStep, setBookingStep] = useState(1); // 1: Calendar, 2: Form, 3: Success
   const [formData, setFormData] = useState({ name: "", email: "", notes: "" });
+  const [customAnswers, setCustomAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [bookedMeeting, setBookedMeeting] = useState(null);
 
@@ -190,7 +191,8 @@ export default function BookingPage() {
         inviteeName: formData.name,
         inviteeEmail: formData.email,
         inviteeTimezone: visitorTimezone,
-        notes: formData.notes
+        notes: formData.notes,
+        answers: customAnswers
       });
       
       setBookedMeeting(res.data);
@@ -375,6 +377,31 @@ export default function BookingPage() {
                   className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
                 />
               </div>
+
+              {eventType.customQuestions && eventType.customQuestions.map((q) => (
+                <div key={q.id}>
+                  <label className="block text-sm font-bold text-slate-800 mb-1">
+                    {q.label} {q.required && '*'}
+                  </label>
+                  {q.type === 'textarea' ? (
+                    <textarea 
+                      required={q.required}
+                      rows={3}
+                      value={customAnswers[q.id] || ''}
+                      onChange={(e) => setCustomAnswers({...customAnswers, [q.id]: e.target.value})}
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
+                    />
+                  ) : (
+                    <input 
+                      type="text" 
+                      required={q.required}
+                      value={customAnswers[q.id] || ''}
+                      onChange={(e) => setCustomAnswers({...customAnswers, [q.id]: e.target.value})}
+                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
+                    />
+                  )}
+                </div>
+              ))}
               
               <button 
                 type="submit" 

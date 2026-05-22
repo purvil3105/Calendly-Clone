@@ -10,12 +10,9 @@ exports.getEventDetails = async (req, res, next) => {
       return res.status(404).json({ message: "Event type not found" });
     }
     
-    // Also fetch the host timezone to display
-    const availability = await availabilityService.getAvailability();
-    
     res.json({
       eventType,
-      hostTimezone: availability.timezone
+      hostTimezone: eventType.schedule?.timezone || 'Asia/Kolkata'
     });
   } catch (error) {
     next(error);

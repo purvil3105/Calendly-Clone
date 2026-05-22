@@ -18,14 +18,26 @@ async function main() {
   });
   console.log(`✅ Created user: ${user.name} (${user.email})`);
 
-  // 2. Clear existing Event Types (for clean seeding)
+  // 2. Create Default Schedule
+  await prisma.schedule.deleteMany();
+  const schedule = await prisma.schedule.create({
+    data: {
+      userId: user.id,
+      name: 'Working Hours',
+      timezone: 'Asia/Kolkata',
+      isDefault: true
+    }
+  });
+  console.log(`✅ Created default schedule: ${schedule.name}`);
+
+  // 3. Clear existing Event Types (for clean seeding)
   await prisma.eventType.deleteMany();
 
-  // 3. Create Event Types
+  // 4. Create Event Types
   const eventTypes = [
-    { name: '15 Minute Meeting', slug: '15min', durationMin: 15, description: 'Quick chat or introductory call.' },
-    { name: '30 Minute Meeting', slug: '30min', durationMin: 30, description: 'Standard meeting.' },
-    { name: '1 Hour Meeting', slug: '60min', durationMin: 60, description: 'Deep dive discussion.' },
+    { userId: user.id, scheduleId: schedule.id, name: '15 Minute Meeting', slug: '15min', durationMin: 15, description: 'Quick chat or introductory call.' },
+    { userId: user.id, scheduleId: schedule.id, name: '30 Minute Meeting', slug: '30min', durationMin: 30, description: 'Standard meeting.' },
+    { userId: user.id, scheduleId: schedule.id, name: '1 Hour Meeting', slug: '60min', durationMin: 60, description: 'Deep dive discussion.' },
   ];
 
   for (const et of eventTypes) {
@@ -33,13 +45,14 @@ async function main() {
   }
   console.log('✅ Created 3 event types');
 
-  // 4. Set Default Availability Rules (Mon-Fri, 9am to 5pm)
+  // 5. Set Default Availability Rules (Mon-Fri, 9am to 5pm)
   await prisma.availabilityRule.deleteMany();
   
   const rules = [];
   // 1=Mon, ..., 5=Fri
   for (let i = 1; i <= 5; i++) {
     rules.push({
+      scheduleId: schedule.id,
       dayOfWeek: i,
       startTime: '09:00',
       endTime: '17:00'

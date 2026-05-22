@@ -16,7 +16,13 @@ export const eventTypesAPI = {
 
 export const availabilityAPI = {
   get: () => api.get('/availability'),
-  update: (data) => api.put('/availability', data),
+  create: (data) => api.post('/availability', data),
+  update: (id, data) => api.put(`/availability/${id}`, data),
+  delete: (id) => api.delete(`/availability/${id}`),
+  // Date Overrides
+  getOverrides: (scheduleId) => api.get(`/availability/${scheduleId}/overrides`),
+  upsertOverride: (scheduleId, data) => api.post(`/availability/${scheduleId}/overrides`, data),
+  deleteOverride: (scheduleId, overrideId) => api.delete(`/availability/${scheduleId}/overrides/${overrideId}`),
 };
 
 export const publicAPI = {
@@ -28,5 +34,7 @@ export const publicAPI = {
 
 export const meetingsAPI = {
   getAll: (status) => api.get('/meetings', { params: { status } }),
+  getById: (id) => api.get(`/meetings/${id}`),
   cancel: (id) => api.post(`/meetings/${id}/cancel`),
+  reschedule: (id, startAt) => api.patch(`/meetings/${id}/reschedule`, { startAt }),
 };

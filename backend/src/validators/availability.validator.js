@@ -11,11 +11,18 @@ const availabilityRuleSchema = z.object({
   path: ["end_time"]
 });
 
+const createScheduleSchema = z.object({
+  name: z.string().min(1),
+  timezone: z.string().min(1),
+});
+
 const updateAvailabilitySchema = z.object({
+  name: z.string().min(1),
   timezone: z.string().min(1),
   rules: z.array(availabilityRuleSchema),
 });
 
 module.exports = {
+  createScheduleSchema,
   updateAvailabilitySchema
 };

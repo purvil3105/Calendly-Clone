@@ -9,6 +9,7 @@ exports.generateSlotsForRange = ({
   availabilityRules,
   dateOverrides,
   existingMeetings,
+  eventType,
 }) => {
   const slots = [];
   
@@ -31,10 +32,13 @@ exports.generateSlotsForRange = ({
     const override = dateOverrides.find(o => DateTime.fromJSDate(o.date).toISODate() === dateStr);
     
     if (override) {
-      isAvailableDay = override.isAvailable;
-      if (isAvailableDay) {
+      // If startTime and endTime are set, use custom hours; otherwise day is blocked
+      if (override.startTime && override.endTime) {
+        isAvailableDay = true;
         dayStartTime = override.startTime;
         dayEndTime = override.endTime;
+      } else {
+        isAvailableDay = false;
       }
     } else {
       const rule = availabilityRules.find(r => r.dayOfWeek === dayOfWeek);
@@ -61,9 +65,13 @@ exports.generateSlotsForRange = ({
       }
 
       const hasConflict = existingMeetings.some(meeting => {
-        const mStart = DateTime.fromJSDate(meeting.startAt);
-        const mEnd = DateTime.fromJSDate(meeting.endAt);
-        return currentSlotStart < mEnd && currentSlotEnd > mStart;
+        const mStart = DateTime.fromJSDate(meeting.startAt).minus({ minutes: meeting.eventType?.bufferBefore || 0 });
+        const mEnd = DateTime.fromJSDate(meeting.endAt).plus({ minutes: meeting.eventType?.bufferAfter || 0 });
+        
+        const sStart = currentSlotStart.minus({ minutes: eventType?.bufferBefore || 0 });
+        const sEnd = currentSlotEnd.plus({ minutes: eventType?.bufferAfter || 0 });
+        
+        return sStart < mEnd && sEnd > mStart;
       });
 
       if (!hasConflict) {

@@ -107,7 +107,14 @@ export default function MeetingsPage() {
 
           {/* Actions */}
           {!isPast && !isCancelled && (
-            <div className="flex flex-col justify-start">
+            <div className="flex flex-col justify-start gap-2">
+              <a 
+                href={`/reschedule/${meeting.id}`}
+                target="_blank"
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-sm font-medium transition-colors text-center"
+              >
+                Reschedule
+              </a>
               <button 
                 onClick={() => handleCancel(meeting.id)}
                 disabled={cancellingId === meeting.id}

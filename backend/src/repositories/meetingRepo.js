@@ -1,6 +1,13 @@
 const prisma = require('../lib/prisma.js');
 
 class MeetingRepository {
+  async findById(id) {
+    return prisma.meeting.findUnique({
+      where: { id },
+      include: { eventType: true }
+    });
+  }
+
   async findAllByStatus(status) {
     const now = new Date();
     
@@ -35,7 +42,8 @@ class MeetingRepository {
       },
       select: {
         startAt: true,
-        endAt: true
+        endAt: true,
+        eventType: { select: { bufferBefore: true, bufferAfter: true } }
       }
     });
   }
@@ -60,6 +68,7 @@ class MeetingRepository {
         inviteeName: data.inviteeName,
         inviteeEmail: data.inviteeEmail,
         notes: data.notes,
+        answers: data.answers,
         status: 'scheduled'
       }
     });
@@ -69,6 +78,13 @@ class MeetingRepository {
     return prisma.meeting.update({
       where: { id },
       data: { status: 'cancelled' }
+    });
+  }
+
+  async reschedule(id, startAt, endAt) {
+    return prisma.meeting.update({
+      where: { id },
+      data: { startAt, endAt }
     });
   }
 }

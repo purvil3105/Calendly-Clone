@@ -1,46 +1,75 @@
 const availabilityRepo = require('../repositories/availabilityRepo.js');
 const meetingRepo = require('../repositories/meetingRepo.js');
+const scheduleRepo = require('../repositories/scheduleRepo.js');
 const prisma = require('../lib/prisma.js');
 const { generateSlotsForRange } = require('./slotEngine.js');
 
-exports.getAvailability = async () => {
+exports.getAllSchedules = async () => {
   const user = await prisma.user.findFirst();
   if (!user) throw new Error("No user found");
   
-  const rules = await availabilityRepo.findRules();
-  
-  return {
-    timezone: user.timezone,
-    rules: rules.map(r => ({
-      day_of_week: r.dayOfWeek,
-      start_time: r.startTime,
-      end_time: r.endTime
-    }))
-  };
+  return scheduleRepo.findByUserId(user.id);
 };
 
-exports.updateAvailability = async (timezone, rules) => {
-  return availabilityRepo.updateAvailability(timezone, rules);
+exports.createSchedule = async (data) => {
+  const user = await prisma.user.findFirst();
+  if (!user) throw new Error("No user found");
+
+  return scheduleRepo.create({
+    userId: user.id,
+    name: data.name,
+    timezone: data.timezone,
+  });
+};
+
+exports.updateSchedule = async (scheduleId, name, timezone, rules) => {
+  // Update name and timezone
+  await prisma.schedule.update({
+    where: { id: scheduleId },
+    data: { name, timezone }
+  });
+  // Update rules
+  return availabilityRepo.updateAvailability(scheduleId, timezone, rules);
+};
+
+exports.deleteSchedule = async (scheduleId) => {
+  return scheduleRepo.delete(scheduleId);
 };
 
 exports.getAvailableSlots = async (eventType, startISO, endISO) => {
   const startDt = new Date(startISO);
   const endDt = new Date(endISO);
   
-  const user = await prisma.user.findFirst();
-  if (!user) throw new Error("No user found");
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: eventType.scheduleId }
+  });
+  if (!schedule) throw new Error("Schedule not found for this event type");
   
-  const rules = await availabilityRepo.findRules();
-  const overrides = await availabilityRepo.findOverrides(startDt, endDt);
+  const rules = await availabilityRepo.findRules(eventType.scheduleId);
+  const overrides = await availabilityRepo.findOverrides(eventType.scheduleId, startDt, endDt);
   const existingMeetings = await meetingRepo.findUpcomingBetween(startDt, endDt);
   
   return generateSlotsForRange({
     startDt,
     endDt,
     durationMin: eventType.durationMin,
-    hostTimezone: user.timezone,
+    hostTimezone: schedule.timezone,
     availabilityRules: rules,
     dateOverrides: overrides,
-    existingMeetings
+    existingMeetings,
+    eventType
   });
+};
+
+// ─── Date Override Services ──────────────────────────────
+exports.getOverrides = async (scheduleId) => {
+  return availabilityRepo.findOverridesByScheduleId(scheduleId);
+};
+
+exports.upsertOverride = async (scheduleId, date, startTime, endTime) => {
+  return availabilityRepo.upsertOverride(scheduleId, new Date(date), startTime, endTime);
+};
+
+exports.deleteOverride = async (overrideId) => {
+  return availabilityRepo.deleteOverride(overrideId);
 };

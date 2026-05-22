@@ -19,16 +19,33 @@ model User {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   eventTypes        EventType[]
-  availabilityRules AvailabilityRule[]
-  dateOverrides     DateOverride[]
+  schedules         Schedule[]
 
   @@map("users")
+}
+
+// ─── 1.5 Schedules ──────────────────────────────────────
+model Schedule {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(120)
+  timezone  String   @default("Asia/Kolkata") @db.VarChar(64)
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilityRules AvailabilityRule[]
+  dateOverrides     DateOverride[]
+  eventTypes        EventType[]
+
+  @@map("schedules")
 }
 
 // ─── 2. Event Types ─────────────────────────────────────
 model EventType {
   id           String  @id @default(uuid()) @db.Uuid
   userId       String  @map("user_id") @db.Uuid
+  scheduleId   String  @map("schedule_id") @db.Uuid
   name         String  @db.VarChar(120)
   slug         String  @db.VarChar(80)
   durationMin  Int     @map("duration_min")
@@ -36,9 +53,11 @@ model EventType {
   bufferBefore Int     @default(0) @map("buffer_before")
   bufferAfter  Int     @default(0) @map("buffer_after")
   isActive     Boolean @default(true) @map("is_active")
+  customQuestions Json? @map("custom_questions")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule Schedule  @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
   meetings Meeting[]
 
   @@unique([userId, slug])
@@ -48,28 +67,28 @@ model EventType {
 // ─── 3. Availability Rules (recurring weekly) ───────────
 model AvailabilityRule {
   id        String @id @default(uuid()) @db.Uuid
-  userId    String @map("user_id") @db.Uuid
+  scheduleId String @map("schedule_id") @db.Uuid
   dayOfWeek Int    @map("day_of_week") @db.SmallInt
   startTime String @map("start_time") @db.VarChar(5) // "09:00"
   endTime   String @map("end_time") @db.VarChar(5)   // "17:00"
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
-  @@index([userId, dayOfWeek])
+  @@index([scheduleId, dayOfWeek])
   @@map("availability_rules")
 }
 
 // ─── 4. Date Overrides (bonus) ──────────────────────────
 model DateOverride {
   id        String  @id @default(uuid()) @db.Uuid
-  userId    String  @map("user_id") @db.Uuid
+  scheduleId String @map("schedule_id") @db.Uuid
   date      DateTime @db.Date
   startTime String? @map("start_time") @db.VarChar(5)
   endTime   String? @map("end_time") @db.VarChar(5)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, date])
+  @@unique([scheduleId, date])
   @@map("date_overrides")
 }
 
@@ -82,6 +101,7 @@ model Meeting {
   startAt       DateTime @map("start_at") @db.Timestamptz()
   endAt         DateTime @map("end_at") @db.Timestamptz()
   notes         String?  @db.Text
+  answers       Json?    @map("answers")
   status        String   @default("confirmed") @db.VarChar(20)
   cancelledAt   DateTime? @map("cancelled_at") @db.Timestamptz()
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
