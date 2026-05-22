@@ -28,8 +28,9 @@ exports.bookMeeting = async (eventType, bookingData) => {
     answers: bookingData.answers
   });
 
-  // 3. Send Email
-  emailService.sendBookingConfirmation(meeting, eventType);
+  // 3. Send Email (caught so it doesn't crash the server if SMTP fails)
+  emailService.sendBookingConfirmation(meeting, eventType)
+    .catch(err => console.error("Failed to send booking email:", err));
 
   return meeting;
 };
@@ -55,8 +56,9 @@ exports.rescheduleMeeting = async (meetingId, newStartAtISO) => {
 
   const updatedMeeting = await meetingRepo.reschedule(meetingId, startDate, endDate);
   
-  // Send Email
-  emailService.sendRescheduleNotice(updatedMeeting, eventType);
+  // Send Email (caught so it doesn't crash the server if SMTP fails)
+  emailService.sendRescheduleNotice(updatedMeeting, eventType)
+    .catch(err => console.error("Failed to send reschedule email:", err));
 
   return updatedMeeting;
 };
