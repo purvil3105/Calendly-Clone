@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── 1. Users ───────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  email     String   @unique @db.VarChar(180)
+  timezone  String   @default("Asia/Kolkata") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  eventTypes        EventType[]
+  availabilityRules AvailabilityRule[]
+  dateOverrides     DateOverride[]
+
+  @@map("users")
+}
+
+// ─── 2. Event Types ─────────────────────────────────────
+model EventType {
+  id           String  @id @default(uuid()) @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  name         String  @db.VarChar(120)
+  slug         String  @db.VarChar(80)
+  durationMin  Int     @map("duration_min")
+  description  String? @db.Text
+  bufferBefore Int     @default(0) @map("buffer_before")
+  bufferAfter  Int     @default(0) @map("buffer_after")
+  isActive     Boolean @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetings Meeting[]
+
+  @@unique([userId, slug])
+  @@map("event_types")
+}
+
+// ─── 3. Availability Rules (recurring weekly) ───────────
+model AvailabilityRule {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @map("user_id") @db.Uuid
+  dayOfWeek Int    @map("day_of_week") @db.SmallInt
+  startTime String @map("start_time") @db.VarChar(5) // "09:00"
+  endTime   String @map("end_time") @db.VarChar(5)   // "17:00"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dayOfWeek])
+  @@map("availability_rules")
+}
+
+// ─── 4. Date Overrides (bonus) ──────────────────────────
+model DateOverride {
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @map("user_id") @db.Uuid
+  date      DateTime @db.Date
+  startTime String? @map("start_time") @db.VarChar(5)
+  endTime   String? @map("end_time") @db.VarChar(5)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("date_overrides")
+}
+
+// ─── 5. Meetings (bookings) ────────────────────────────
+model Meeting {
+  id            String   @id @default(uuid()) @db.Uuid
+  eventTypeId   String   @map("event_type_id") @db.Uuid
+  inviteeName   String   @map("invitee_name") @db.VarChar(120)
+  inviteeEmail  String   @map("invitee_email") @db.VarChar(180)
+  startAt       DateTime @map("start_at") @db.Timestamptz()
+  endAt         DateTime @map("end_at") @db.Timestamptz()
+  notes         String?  @db.Text
+  status        String   @default("confirmed") @db.VarChar(20)
+  cancelledAt   DateTime? @map("cancelled_at") @db.Timestamptz()
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+
+  // Partial unique index for double-booking prevention
+  // NOTE: Prisma doesn't support partial indexes natively.
+  // We'll create this via a raw SQL migration.
+  @@index([eventTypeId, startAt, endAt])
+  @@map("meetings")
+}
