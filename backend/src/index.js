@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // Middleware
-app.use(cors()); // Allow all origins in dev
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || '*' }));
 app.use(express.json());
 
 // Routes

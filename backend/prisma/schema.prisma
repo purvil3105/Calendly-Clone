@@ -98,6 +98,7 @@ model Meeting {
   eventTypeId   String   @map("event_type_id") @db.Uuid
   inviteeName   String   @map("invitee_name") @db.VarChar(120)
   inviteeEmail  String   @map("invitee_email") @db.VarChar(180)
+  inviteeTimezone String? @map("invitee_timezone") @db.VarChar(64)
   startAt       DateTime @map("start_at") @db.Timestamptz()
   endAt         DateTime @map("end_at") @db.Timestamptz()
   notes         String?  @db.Text

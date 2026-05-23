@@ -50,14 +50,20 @@ export function EventTypeDialog({ isOpen, onClose, onSuccess, initialData }) {
           slug: "",
           duration_min: "30",
           description: "",
-          schedule_id: schedules.length > 0 ? schedules[0].id : "",
+          schedule_id: "",
           buffer_before: "0",
           buffer_after: "0",
           custom_questions: [],
         });
       }
     }
-  }, [isOpen, initialData, schedules]);
+  }, [isOpen, initialData]);
+
+  useEffect(() => {
+    if (isOpen && schedules.length > 0 && !formData.schedule_id) {
+      setFormData(prev => ({ ...prev, schedule_id: schedules[0].id }));
+    }
+  }, [isOpen, schedules, formData.schedule_id]);
 
   if (!isOpen) return null;
 

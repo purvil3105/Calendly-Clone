@@ -10,7 +10,7 @@ exports.bookMeeting = async (eventType, bookingData) => {
   const endDate = endDt.toJSDate();
 
   // 1. Verify concurrency / double-booking
-  const conflict = await meetingRepo.findConflicting(startDate, endDate);
+  const conflict = await meetingRepo.findConflicting(eventType.id, startDate, endDate);
   
   if (conflict) {
     throw new Error("This time slot is no longer available.");
@@ -47,7 +47,7 @@ exports.rescheduleMeeting = async (meetingId, newStartAtISO) => {
   const endDate = endDt.toJSDate();
 
   // Verify conflict
-  const conflict = await meetingRepo.findConflicting(startDate, endDate);
+  const conflict = await meetingRepo.findConflicting(eventType.id, startDate, endDate);
   
   // Ignore conflict if it's the SAME meeting
   if (conflict && conflict.id !== meetingId) {

@@ -15,7 +15,7 @@ class MeetingRepository {
       return prisma.meeting.findMany({
         where: {
           startAt: { gte: now },
-          status: 'scheduled'
+          status: 'confirmed'
         },
         include: { eventType: true },
         orderBy: { startAt: 'asc' }
@@ -38,7 +38,7 @@ class MeetingRepository {
     return prisma.meeting.findMany({
       where: {
         startAt: { gte: startDate, lt: endDate },
-        status: 'scheduled'
+        status: 'confirmed'
       },
       select: {
         startAt: true,
@@ -48,10 +48,11 @@ class MeetingRepository {
     });
   }
 
-  async findConflicting(startAt, endAt) {
+  async findConflicting(eventTypeId, startAt, endAt) {
     return prisma.meeting.findFirst({
       where: {
-        status: 'scheduled',
+        eventTypeId,
+        status: 'confirmed',
         OR: [
           { startAt: { lt: endAt }, endAt: { gt: startAt } }
         ]
@@ -67,9 +68,10 @@ class MeetingRepository {
         endAt: data.endAt,
         inviteeName: data.inviteeName,
         inviteeEmail: data.inviteeEmail,
+        inviteeTimezone: data.inviteeTimezone,
         notes: data.notes,
         answers: data.answers,
-        status: 'scheduled'
+        status: 'confirmed'
       }
     });
   }
