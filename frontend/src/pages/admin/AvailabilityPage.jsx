@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { availabilityAPI } from "@/lib/api";
 import { TIMEZONE_OPTIONS, getDayName } from "@/lib/time";
 import { toast } from "sonner";
-import { Globe, Save, Plus, Trash2, CalendarDays, CalendarOff, CalendarClock } from "lucide-react";
+import { Plus, Trash2, Globe, Clock, Check, Calendar as CalendarIcon, ExternalLink, Settings } from "lucide-react";
+import Loader from "../../components/ui/Loader";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
 const defaultRules = DAYS.map((d) => ({ day_of_week: d, start_time: "09:00", end_time: "17:00", enabled: false }));
@@ -199,7 +200,7 @@ export default function AvailabilityPage() {
     return d.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64">Loading...</div>;
+  if (loading) return <Loader />;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

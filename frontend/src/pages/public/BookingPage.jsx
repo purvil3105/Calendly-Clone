@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DateTime } from "luxon";
 import { Clock, Globe, Calendar as CalendarIcon, Video, CheckCircle2, ChevronLeft, ChevronRight, User } from "lucide-react";
+import Loader from "../../components/ui/Loader";
 import { publicAPI } from "@/lib/api";
 import { TIMEZONE_OPTIONS, formatDateTimeDisplay } from "@/lib/time";
 import { toast } from "sonner";
@@ -208,7 +209,7 @@ export default function BookingPage() {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-12">Loading...</div>;
+  if (loading) return <Loader className="h-[50vh]" />;
   if (!eventType) return <div className="text-center p-12 text-slate-500">Event not found.</div>;
 
   // Render Success Screen
@@ -230,7 +231,7 @@ export default function BookingPage() {
             <div className="flex gap-3 text-slate-600">
               <User className="w-5 h-5 text-slate-400" />
               <div>
-                <span className="font-medium text-slate-900">{formData.name}</span> and Demo User
+                <span className="font-medium text-slate-900">{formData.name}</span> and Purvil Patel
               </div>
             </div>
             
@@ -253,12 +254,18 @@ export default function BookingPage() {
           </div>
         </div>
         
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col items-center gap-4">
           <button 
             onClick={() => window.location.reload()}
             className="text-blue-600 font-medium hover:underline"
           >
             Book another meeting
+          </button>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 border border-slate-300 text-slate-700 font-bold rounded-full hover:border-slate-400 transition-colors"
+          >
+            Return to home page
           </button>
         </div>
       </div>
@@ -278,7 +285,7 @@ export default function BookingPage() {
           </button>
         )}
         
-        <div className={`text-slate-500 font-medium text-sm mb-2 ${bookingStep === 2 ? 'mt-8' : ''}`}>Demo User</div>
+        <div className={`text-slate-500 font-medium text-sm mb-2 ${bookingStep === 2 ? 'mt-8' : ''}`}>Purvil Patel</div>
         <h2 className="text-2xl font-bold text-slate-900 mb-6">{eventType.name}</h2>
         
         <div className="space-y-4 mb-6">
@@ -337,7 +344,7 @@ export default function BookingPage() {
             
             {loadingSlots && (
               <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center">
-                Loading availability...
+                <Loader className="h-12" />
               </div>
             )}
           </div>

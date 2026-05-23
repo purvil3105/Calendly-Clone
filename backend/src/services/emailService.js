@@ -1,3 +1,4 @@
+require('dns').setDefaultResultOrder('ipv4first');
 const nodemailer = require('nodemailer');
 
 class EmailService {
@@ -37,11 +38,11 @@ class EmailService {
       const info = await this.transporter.sendMail({
         from: this.getFromEmail(),
         to: meeting.inviteeEmail,
-        subject: `Confirmed: ${eventType.name} with Demo User`,
+        subject: `Confirmed: ${eventType.name} with Purvil Patel`,
         text: `Your meeting has been scheduled for ${meeting.startAt}.\n\nTo reschedule, visit: http://localhost:3001/reschedule/${meeting.id}`,
         html: `
           <h3>Meeting Confirmed</h3>
-          <p>Your meeting <strong>${eventType.name}</strong> with Demo User has been scheduled.</p>
+          <p>Your meeting <strong>${eventType.name}</strong> with Purvil Patel has been scheduled.</p>
           <p><strong>Start:</strong> ${meeting.startAt}</p>
           <p><strong>End:</strong> ${meeting.endAt}</p>
           <hr/>
@@ -64,11 +65,11 @@ class EmailService {
       const info = await this.transporter.sendMail({
         from: this.getFromEmail(),
         to: meeting.inviteeEmail,
-        subject: `Rescheduled: ${eventType.name} with Demo User`,
+        subject: `Rescheduled: ${eventType.name} with Purvil Patel`,
         text: `Your meeting has been rescheduled to ${meeting.startAt}.\n\nTo reschedule again, visit: http://localhost:3001/reschedule/${meeting.id}`,
         html: `
           <h3>Meeting Rescheduled</h3>
-          <p>Your meeting <strong>${eventType.name}</strong> with Demo User has been rescheduled.</p>
+          <p>Your meeting <strong>${eventType.name}</strong> with Purvil Patel has been rescheduled.</p>
           <p><strong>New Start:</strong> ${meeting.startAt}</p>
           <p><strong>New End:</strong> ${meeting.endAt}</p>
           <hr/>
@@ -91,11 +92,11 @@ class EmailService {
       const info = await this.transporter.sendMail({
         from: this.getFromEmail(),
         to: meeting.inviteeEmail,
-        subject: `Cancelled: ${eventType.name} with Demo User`,
+        subject: `Cancelled: ${eventType.name} with Purvil Patel`,
         text: `Your meeting scheduled for ${meeting.startAt} has been cancelled.`,
         html: `
           <h3>Meeting Cancelled</h3>
-          <p>Your meeting <strong>${eventType.name}</strong> with Demo User has been cancelled.</p>
+          <p>Your meeting <strong>${eventType.name}</strong> with Purvil Patel has been cancelled.</p>
         `,
       });
       console.log("Cancellation email sent via Nodemailer. Message ID:", info.messageId);

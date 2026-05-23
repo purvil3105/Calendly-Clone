@@ -6,38 +6,430 @@ A full-stack scheduling and availability management application built as a clone
 
 ## 🚀 Tech Stack
 
-**Frontend:**
-- React 18 + Vite
-- TailwindCSS (Styling)
-- React Router (Routing)
-- Luxon (Timezone and Date manipulation)
-- Axios (API Client)
-
-**Backend:**
-- Node.js + Express.js
-- Prisma (ORM)
-- PostgreSQL (Database hosted on Neon)
-- Zod (Request Validation)
-- Nodemailer (Email Notifications)
-- Luxon (Timezone-safe slot calculations)
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 18 + Vite + TailwindCSS |
+| **Routing** | React Router v6 |
+| **Date/Time** | Luxon (timezone-safe operations) |
+| **HTTP Client** | Axios |
+| **Backend** | Node.js + Express.js v5 |
+| **ORM** | Prisma |
+| **Database** | PostgreSQL (hosted on Neon) |
+| **Validation** | Zod |
+| **Email** | Nodemailer |
+| **UI Components** | Radix UI primitives + shadcn/ui style |
 
 ---
 
 ## ✨ Features
 
 ### Core Functionality
-- **Event Types Management:** Create, edit, and delete event types with custom URLs, durations, and descriptions.
-- **Availability Rules:** Define your weekly recurring schedule (e.g., Mon-Fri 9:00 AM - 5:00 PM).
-- **Public Booking Page:** A timezone-aware public page where invitees can see available slots and book meetings.
-- **Meeting Dashboard:** View upcoming and past meetings, and cancel them.
-- **Concurrency Safety:** Transactional booking and database-level constraints prevent double-booking the same time slot.
+- **Event Types Management** — Create, edit, and delete event types with custom URLs, durations, and descriptions.
+- **Availability Rules** — Define your weekly recurring schedule (e.g., Mon–Fri 9:00 AM – 5:00 PM).
+- **Public Booking Page** — A timezone-aware public page where invitees can see available slots and book meetings.
+- **Meeting Dashboard** — View upcoming and past meetings, and cancel them.
+- **Concurrency Safety** — Transactional booking and database-level constraints prevent double-booking the same time slot.
 
-### Bonus Features Implemented
-- **Buffer Times:** Automatically add padding before and after meetings so you aren't double-booked back-to-back.
-- **Custom Invitee Questions:** Define dynamic required/optional questions (e.g., Phone Number, Notes) that invitees must answer during booking.
-- **Rescheduling Flow:** Easily move an existing meeting to a new open time slot.
-- **Date-Specific Overrides:** Override your standard weekly schedule for specific dates (e.g., taking a half-day off next Friday).
-- **Email Notifications:** Automated emails sent to invitees upon booking, rescheduling, and cancellation (using SMTP).
+### Bonus Features
+- **Buffer Times** — Automatically add padding before and after meetings.
+- **Custom Invitee Questions** — Define dynamic required/optional questions that invitees answer during booking.
+- **Rescheduling Flow** — Move an existing meeting to a new open time slot.
+- **Date-Specific Overrides** — Override your standard weekly schedule for specific dates (e.g., a half-day off).
+- **Email Notifications** — Automated emails sent to invitees upon booking, rescheduling, and cancellation (via SMTP).
+
+---
+
+## 🏗️ High-Level Architecture
+
+```
+                ┌────────────────────────────────────────────┐
+                │                  USERS                     │
+                │  Admin (owner)        Invitee (public)     │
+                └─────────────┬──────────────────┬───────────┘
+                              │                  │
+                              ▼                  ▼
+                ┌────────────────────────────────────────────┐
+                │              FRONTEND (SPA)                │
+                │         React 18 + Vite + Tailwind         │
+                │                                            │
+                │   Admin Pages          Public Pages        │
+                │   - Event Types        - /:slug (booking)  │
+                │   - Availability       - /reschedule/:id   │
+                │   - Meetings                               │
+                └─────────────┬──────────────────────────────┘
+                              │  REST / JSON (Axios)
+                              ▼
+                ┌────────────────────────────────────────────┐
+                │            BACKEND API SERVER              │
+                │           Node.js + Express v5             │
+                │                                            │
+                │   Controllers → Services → Repositories    │
+                │   - Validation (Zod)                       │
+                │   - Timezone handling (Luxon)              │
+                │   - Slot generation engine                 │
+                │   - Concurrency-safe booking               │
+                └─────────────┬──────────────────────────────┘
+                              │  SQL (Prisma ORM)
+                              ▼
+                ┌────────────────────────────────────────────┐
+                │               POSTGRESQL                   │
+                │  users, schedules, event_types,            │
+                │  availability_rules, date_overrides,       │
+                │  meetings                                  │
+                └─────────────┬──────────────────────────────┘
+                              │
+                              ▼
+                ┌────────────────────────────────────────────┐
+                │       Email Service (Nodemailer)           │
+                └────────────────────────────────────────────┘
+```
+
+**Style:** 3-tier monolith. Single backend service, single DB. No auth (single seeded demo user).
+
+---
+
+## 🗄️ Database Schema
+
+### ER Diagram
+
+```
+┌─────────────┐ 1   *  ┌──────────────┐ 1   *  ┌──────────────────┐
+│   users     │────────│   schedules  │────────│availability_rules│
+└─────────────┘        └──────┬───────┘        └──────────────────┘
+       │ 1                    │ 1
+       │                      │ *
+       │ *             ┌──────▼──────────┐
+       │               │ date_overrides  │
+       │               └─────────────────┘
+       │
+       │ 1   *  ┌──────────────┐ 1   *  ┌──────────────┐
+       └────────│ event_types  │────────│   meetings   │
+                └──────────────┘        └──────────────┘
+```
+
+### Tables
+
+#### `users`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | Auto-generated |
+| `name` | VARCHAR(120) | |
+| `email` | VARCHAR(180) UNIQUE | |
+| `timezone` | VARCHAR(64) | Default: `Asia/Kolkata` |
+| `created_at` | TIMESTAMPTZ | |
+
+#### `schedules`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | |
+| `user_id` | UUID FK → users | CASCADE delete |
+| `name` | VARCHAR(120) | e.g. "Working Hours" |
+| `timezone` | VARCHAR(64) | IANA timezone |
+| `is_default` | BOOLEAN | |
+| `created_at` | TIMESTAMPTZ | |
+
+#### `event_types`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | |
+| `user_id` | UUID FK → users | CASCADE delete |
+| `schedule_id` | UUID FK → schedules | RESTRICT delete |
+| `name` | VARCHAR(120) | e.g. "30 Minute Meeting" |
+| `slug` | VARCHAR(80) | e.g. "30min", unique per user |
+| `duration_min` | INT | Must be > 0 |
+| `description` | TEXT | Optional |
+| `buffer_before` | INT | Minutes, default 0 |
+| `buffer_after` | INT | Minutes, default 0 |
+| `is_active` | BOOLEAN | Default true |
+| `custom_questions` | JSON | Array of question objects |
+| `created_at` | TIMESTAMPTZ | |
+
+#### `availability_rules`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | |
+| `schedule_id` | UUID FK → schedules | CASCADE delete |
+| `day_of_week` | SMALLINT | 0 = Sunday … 6 = Saturday |
+| `start_time` | VARCHAR(5) | `HH:mm` format |
+| `end_time` | VARCHAR(5) | `HH:mm` format |
+
+#### `date_overrides`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | |
+| `schedule_id` | UUID FK → schedules | CASCADE delete |
+| `date` | DATE | |
+| `start_time` | VARCHAR(5) | NULL = entire day blocked |
+| `end_time` | VARCHAR(5) | |
+
+> **Unique constraint:** `(schedule_id, date)`
+
+#### `meetings`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID PK | |
+| `event_type_id` | UUID FK → event_types | CASCADE delete |
+| `invitee_name` | VARCHAR(120) | |
+| `invitee_email` | VARCHAR(180) | |
+| `start_at` | TIMESTAMPTZ | **Always stored in UTC** |
+| `end_at` | TIMESTAMPTZ | **Always stored in UTC** |
+| `notes` | TEXT | Optional |
+| `answers` | JSON | Custom question answers |
+| `status` | VARCHAR(20) | `scheduled` \| `cancelled` |
+| `cancelled_at` | TIMESTAMPTZ | |
+| `created_at` | TIMESTAMPTZ | |
+
+> **Key index:** `idx_meetings_range ON meetings(event_type_id, start_at, end_at)`
+
+---
+
+## ⚙️ Core Algorithm: Slot Generation
+
+The slot engine (`backend/src/services/slotEngine.js`) is the heart of the system.
+
+```
+INPUT:  eventType, dateRange [startDt, endDt], hostTimezone
+OUTPUT: list of { start, end } ISO datetime slots (UTC)
+
+For each day in range:
+  1. Check date_overrides — if blocked, skip day entirely
+     If custom hours set, use those instead of weekly rule
+  2. Look up availability_rule for that weekday
+     No rule → skip day
+  3. Build window [dayStart, dayEnd] in host timezone → convert to UTC
+  4. Walk window in 15-min increments:
+       slotStart = windowStart, +15min, +15min, ...
+       slotEnd   = slotStart + durationMin
+       Discard if slotEnd > windowEnd
+  5. Fetch confirmed meetings overlapping the day
+  6. For each candidate: mark BUSY if overlaps any meeting
+       (expanded by bufferBefore / bufferAfter)
+       overlap test: slotStart < meetingEnd AND slotEnd > meetingStart
+  7. Filter out past slots (slotStart <= now)
+  8. Return remaining slots
+```
+
+**Timezone principle:** Owner sets availability in *their* timezone; invitee views in *their* timezone. **UTC is always stored in DB**, conversions happen only at the edges via Luxon.
+
+---
+
+## 🔒 Concurrency: Preventing Double-Booking
+
+Two simultaneous booking requests are handled by a **two-layer defense**:
+
+1. **Application check inside a transaction**
+   - Re-run conflict check before inserting
+   - `findConflicting()` queries for any `scheduled` meeting overlapping the requested slot
+
+2. **DB constraint (last line of defense)**
+   - Index `idx_meetings_range ON meetings(event_type_id, start_at, end_at)` ensures fast overlap queries
+   - Unique violation on concurrent inserts → returns **HTTP 409** *"Slot just got taken"*
+
+---
+
+## 📁 Project Structure
+
+```
+calendly-clone/
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma          # DB models & relations
+│   │   ├── seed.js                # Demo user + event types + rules
+│   │   └── migrations/            # SQL migration files
+│   └── src/
+│       ├── index.js               # Express app bootstrap
+│       ├── routes/
+│       │   ├── eventTypes.routes.js
+│       │   ├── availability.routes.js
+│       │   ├── meetings.routes.js
+│       │   └── public.routes.js
+│       ├── controllers/           # Thin — parse req, call service
+│       │   ├── eventTypes.controller.js
+│       │   ├── availability.controller.js
+│       │   ├── meetings.controller.js
+│       │   └── public.controller.js
+│       ├── services/              # Business logic
+│       │   ├── slotEngine.js      # ★ Slot generation algorithm
+│       │   ├── bookingService.js  # Transactional booking + reschedule
+│       │   ├── availabilityService.js
+│       │   ├── eventTypeService.js
+│       │   └── emailService.js
+│       ├── repositories/          # DB access via Prisma
+│       │   ├── eventTypeRepo.js
+│       │   ├── availabilityRepo.js
+│       │   ├── meetingRepo.js
+│       │   └── scheduleRepo.js
+│       ├── validators/            # Zod schemas
+│       │   ├── eventType.validator.js
+│       │   ├── availability.validator.js
+│       │   └── booking.validator.js
+│       ├── lib/
+│       │   ├── prisma.js          # Prisma singleton
+│       │   └── time.js            # Luxon helpers
+│       └── middlewares/
+│           └── errorHandler.js
+│
+└── frontend/
+    └── src/
+        ├── App.jsx                # Routes definition
+        ├── main.jsx
+        ├── index.css              # Tailwind + CSS variables
+        ├── layouts/
+        │   └── AdminLayout.jsx    # Sidebar + header shell
+        ├── pages/
+        │   ├── admin/
+        │   │   ├── EventTypesPage.jsx
+        │   │   ├── AvailabilityPage.jsx
+        │   │   └── MeetingsPage.jsx
+        │   └── public/
+        │       ├── PublicLayout.jsx
+        │       ├── BookingPage.jsx
+        │       └── ReschedulePage.jsx
+        ├── components/
+        │   ├── ui/                # shadcn-style primitives
+        │   │   ├── button.jsx
+        │   │   └── card.jsx
+        │   └── EventTypeDialog.jsx
+        └── lib/
+            ├── api.js             # Axios client + API methods
+            ├── time.js            # Timezone options + formatters
+            └── utils.js           # cn() helper
+```
+
+---
+
+## 🔌 API Documentation
+
+Base URL: `http://localhost:4000/api`
+
+### Admin — Event Types
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/event-types` | List all event types |
+| `POST` | `/event-types` | Create a new event type |
+| `PUT` | `/event-types/:id` | Update an event type |
+| `DELETE` | `/event-types/:id` | Delete an event type |
+
+**POST / PUT body:**
+```json
+{
+  "name": "30 Minute Meeting",
+  "slug": "30min",
+  "duration_min": 30,
+  "description": "Quick sync",
+  "buffer_before": 5,
+  "buffer_after": 5,
+  "schedule_id": "<uuid>",
+  "custom_questions": []
+}
+```
+
+### Admin — Availability / Schedules
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/availability` | List all schedules |
+| `POST` | `/availability` | Create a new schedule |
+| `PUT` | `/availability/:id` | Update schedule name, timezone & rules |
+| `DELETE` | `/availability/:id` | Delete a schedule |
+| `GET` | `/availability/:id/overrides` | Get date overrides for a schedule |
+| `POST` | `/availability/:id/overrides` | Add/update a date override |
+| `DELETE` | `/availability/:id/overrides/:overrideId` | Remove a date override |
+
+**PUT body example:**
+```json
+{
+  "name": "Working Hours",
+  "timezone": "Asia/Kolkata",
+  "rules": [
+    { "day_of_week": 1, "start_time": "09:00", "end_time": "17:00" },
+    { "day_of_week": 2, "start_time": "09:00", "end_time": "17:00" },
+    { "day_of_week": 5, "start_time": "09:00", "end_time": "13:00" }
+  ]
+}
+```
+
+### Admin — Meetings
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/meetings?status=upcoming\|past` | List meetings |
+| `GET` | `/meetings/:id` | Get a specific meeting |
+| `POST` | `/meetings/:id/cancel` | Cancel a meeting |
+| `PATCH` | `/meetings/:id/reschedule` | Reschedule a meeting |
+
+### Public — Booking Flow
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/public/:slug` | Get public details for an event type |
+| `GET` | `/public/:slug/slots?start=YYYY-MM-DD&end=YYYY-MM-DD` | Get available slots |
+| `POST` | `/public/:slug/book` | Confirm a booking |
+
+**Slots response:**
+```json
+[
+  { "start": "2026-05-22T03:30:00.000Z", "end": "2026-05-22T04:00:00.000Z" },
+  { "start": "2026-05-22T04:00:00.000Z", "end": "2026-05-22T04:30:00.000Z" }
+]
+```
+
+**Booking POST body:**
+```json
+{
+  "startAt": "2026-05-22T03:30:00.000Z",
+  "inviteeName": "Asha",
+  "inviteeEmail": "asha@example.com",
+  "inviteeTimezone": "Asia/Kolkata",
+  "notes": "Looking forward to it!",
+  "answers": {}
+}
+```
+
+---
+
+## 🖥️ Frontend Page Structure
+
+```
+/                         → Redirect to /event-types
+/event-types              → List + Create/Edit/Delete event types
+/availability             → Weekly schedule editor + date overrides
+/meetings                 → Upcoming & past meetings, cancel button
+/:slug                    → PUBLIC booking page (calendar + slots + form)
+/reschedule/:meetingId    → Reschedule an existing booking
+```
+
+### Booking Page Component Hierarchy
+
+```
+<BookingPage slug=...>
+  ├── Left Panel: Event details (name, duration, selected time)
+  └── Right Panel (step-based):
+        Step 1: <MonthCalendar />     — highlights bookable dates
+                <TimeSlotList />      — shown after date selection
+        Step 2: <BookingForm />       — name, email, notes, custom Qs
+        Step 3: <ConfirmationCard />  — success screen
+```
+
+---
+
+## 📋 Booking Flow (Sequence)
+
+```
+Invitee → Frontend              Backend                    DB
+  │                                 │                       │
+  ├─ GET /public/:slug ────────────►│ load event_type ─────►│
+  │◄─ event metadata ───────────────│◄──────────────────────│
+  │                                 │                       │
+  ├─ GET /slots?start=..&end=.. ───►│ slot algorithm       ►│
+  │◄─ [{ start, end }, ...] ────────│◄──────────────────────│
+  │                                 │                       │
+  ├─ POST /book ───────────────────►│ check conflict        │
+  │                                 │ INSERT meeting ──────►│
+  │◄─ 201 + meeting ────────────────│                       │
+  │  (success screen shown)         │ send email (async)    │
+```
 
 ---
 
@@ -46,7 +438,7 @@ A full-stack scheduling and availability management application built as a clone
 ### Prerequisites
 - Node.js (v18+)
 - npm
-- PostgreSQL database (Local or Cloud like Neon/Supabase)
+- PostgreSQL database (local or cloud — Neon / Supabase)
 
 ### 1. Clone the repository
 ```bash
@@ -60,121 +452,81 @@ cd backend
 npm install
 ```
 
-Create a `.env` file in the `backend` directory:
+Create a `.env` file in the `backend/` directory:
 ```env
-# Database Connection
+# Database
 DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
 
-# Server Port
+# Server
 PORT=4000
 
-# Frontend origin (for CORS)
-FRONTEND_ORIGIN="http://localhost:3001"
+# CORS
+FRONTEND_ORIGIN="http://localhost:3000"
 
-# Default Seeded User
+# Seed user
 DEFAULT_USER_EMAIL="demo@calendly-clone.com"
 
-# SMTP Configuration (For Email Notifications)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT=587
-SMTP_USER="your-email@gmail.com"
-SMTP_PASS="your-app-password"
+# Email (optional — mock mode used if omitted)
+EMAIL_USER="your-email@gmail.com"
+EMAIL_PASS="your-app-password"
 ```
 
 Initialize the database and start the backend:
 ```bash
 npx prisma migrate dev
-npx prisma db seed
+npm run seed
 npm run dev
 ```
-*The backend will run on `http://localhost:4000`*
+> Backend runs on `http://localhost:4000`
 
 ### 3. Frontend Setup
-Open a new terminal window:
 ```bash
 cd frontend
 npm install
 ```
 
-Create a `.env` file in the `frontend` directory:
+Create a `.env` file in the `frontend/` directory:
 ```env
 VITE_API_URL="http://localhost:4000/api"
 ```
 
-Start the frontend development server:
 ```bash
 npm run dev
 ```
-*The frontend will run on `http://localhost:3001`*
+> Frontend runs on `http://localhost:3000`
 
 ---
 
 ## 🏗️ Assumptions Made
 
-1. **Authentication:** As per assignment constraints, authentication is bypassed. The system assumes a single default "Owner" user seeded into the database (`demo@calendly-clone.com`).
-2. **Timezones:** All dates and times are stored in the database in **UTC**. Conversions to the host's or invitee's local timezone are handled dynamically by `luxon` in the backend algorithm and frontend UI.
-3. **Slot Granularity:** The slot generation algorithm steps forward by the exact `duration` of the event type.
+1. **Authentication** — Bypassed as per assignment constraints. The system assumes a single default "Owner" user seeded into the database (`demo@calendly-clone.com`).
+2. **Timezones** — All dates/times are stored in **UTC**. Conversions to the host's or invitee's local timezone are handled dynamically by Luxon.
+3. **Slot granularity** — The slot generation algorithm steps forward in **15-minute increments** regardless of event duration, matching Calendly's behaviour.
+4. **Schedules** — Event types are linked to a named schedule (not directly to availability rules), allowing multiple schedules per user.
+5. **Meeting status** — Uses `scheduled` / `cancelled` (not `confirmed` from the original spec) to reflect implementation.
+6. **Email** — Runs in mock/log mode when `EMAIL_USER` / `EMAIL_PASS` env vars are absent; no crash on SMTP failure.
 
 ---
 
-## 🗄️ Database Schema Diagram
+## 🚀 Deployment
 
-```text
-┌─────────────┐ 1   *  ┌──────────────┐ 1   *  ┌──────────────┐
-│   users     │────────│ event_types  │────────│   meetings   │
-└─────────────┘        └──────┬───────┘        └──────────────┘
-                              │ 1
-                              │
-                              │ *
-                       ┌──────▼────────────┐
-                       │ availability_rules│  (one row per weekday)
-                       └───────────────────┘
-                              │ 1
-                              │ *
-                       ┌──────▼──────────┐
-                       │ date_overrides  │  (overrides weekly rule)
-                       └─────────────────┘
-```
+| Component | Service | Notes |
+|-----------|---------|-------|
+| Frontend | Vercel | `npm run build`, set `VITE_API_URL` |
+| Backend | Render / Railway | Web service, set env vars |
+| Database | Neon / Supabase | Free Postgres, copy `DATABASE_URL` |
 
----
-
-## 🔌 API Documentation
-
-Base URL: `http://localhost:4000/api`
-
-### Admin (Event Types)
-- `GET /event-types` - List all event types
-- `POST /event-types` - Create a new event type
-- `GET /event-types/:id` - Get details of an event type
-- `PATCH /event-types/:id` - Update an event type
-- `DELETE /event-types/:id` - Delete an event type
-
-### Admin (Availability)
-- `GET /availability` - Get the current weekly schedule
-- `POST /availability` - Create a new schedule
-- `PUT /availability/:id` - Update an existing schedule (rules & timezone)
-- `GET /availability/:id/overrides` - Fetch date-specific overrides
-- `POST /availability/:id/overrides` - Add/Update a date-specific override
-- `DELETE /availability/:id/overrides/:overrideId` - Delete an override
-
-### Admin (Meetings)
-- `GET /meetings?status=upcoming|past` - Get meetings
-- `GET /meetings/:id` - Get a specific meeting
-- `POST /meetings/:id/cancel` - Cancel a meeting
-- `PATCH /meetings/:id/reschedule` - Reschedule a meeting
-
-### Public (Booking Flow)
-- `GET /public/:slug` - Get public details for an event type
-- `GET /public/:slug/slots?start=YYYY-MM-DD&end=YYYY-MM-DD` - Get available time slots for a date range
-- `POST /public/:slug/book` - Confirm a booking
+**Production CORS:** Set `FRONTEND_ORIGIN` to your Vercel deployment URL.
 
 ---
 
 ## 📸 Screenshots
 
-*(Replace these placeholders with actual screenshots before submitting!)*
+*(Add screenshots before submitting!)*
 
-- **Admin Dashboard:** `[Insert Screenshot]`
-- **Availability Editor:** `[Insert Screenshot]`
-- **Public Booking Page:** `[Insert Screenshot]`
-- **Booking Confirmation:** `[Insert Screenshot]`
+- **Admin — Event Types page**
+- **Admin — Availability editor**
+- **Public Booking Page (calendar view)**
+- **Public Booking Page (form step)**
+- **Booking Confirmation screen**
+- **Admin — Meetings dashboard**

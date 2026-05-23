@@ -4,6 +4,7 @@ import { eventTypesAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { EventTypeDialog } from "../../components/EventTypeDialog";
+import Loader from "../../components/ui/Loader";
 
 export default function EventTypesPage() {
   const [eventTypes, setEventTypes] = useState([]);
@@ -57,7 +58,7 @@ export default function EventTypesPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <Loader />;
   }
 
   return (
@@ -93,7 +94,7 @@ export default function EventTypesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {eventTypes.map((event) => (
-            <div key={event.id} className="flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors overflow-hidden">
+            <div key={event.id} className="flex flex-col bg-white border border-slate-200 border-l-[6px] border-l-purple-500 rounded-xl shadow-sm hover:border-slate-300 transition-colors overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex-1">
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="text-lg font-semibold text-slate-900">{event.name}</h3>
@@ -126,7 +127,6 @@ export default function EventTypesPage() {
                 </button>
                 <Link 
                   to={`/${event.slug}`} 
-                  target="_blank"
                   className="flex items-center justify-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-md text-sm font-medium transition-colors"
                 >
                   View <ExternalLink className="w-3 h-3 ml-2" />

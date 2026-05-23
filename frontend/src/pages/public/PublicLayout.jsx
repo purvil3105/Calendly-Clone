@@ -11,7 +11,7 @@ export default function PublicLayout() {
             </div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Calendly Clone</h1>
           </div>
-          <p className="text-slate-500">Book a meeting with Demo User</p>
+          <p className="text-slate-500">Book a meeting with Purvil Patel</p>
         </div>
         
         <Outlet />

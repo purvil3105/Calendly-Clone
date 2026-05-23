@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DateTime } from "luxon";
 import { Clock, Globe, Calendar as CalendarIcon, Video, CheckCircle2, ChevronLeft, ChevronRight, User } from "lucide-react";
+import Loader from "../../components/ui/Loader";
 import { publicAPI, meetingsAPI } from "@/lib/api";
 import { TIMEZONE_OPTIONS, formatDateTimeDisplay } from "@/lib/time";
 import { toast } from "sonner";
@@ -193,7 +194,7 @@ export default function ReschedulePage() {
     }
   };
 
-  if (loading) return <div className="flex justify-center p-12">Loading...</div>;
+  if (loading) return <Loader className="h-[50vh]" />;
   if (!meeting || !eventType) return <div className="text-center p-12 text-slate-500">Meeting not found.</div>;
 
   // Render Success Screen
@@ -215,7 +216,7 @@ export default function ReschedulePage() {
             <div className="flex gap-3 text-slate-600">
               <User className="w-5 h-5 text-slate-400" />
               <div>
-                <span className="font-medium text-slate-900">{meeting.inviteeName}</span> and Demo User
+                <span className="font-medium text-slate-900">{meeting.inviteeName}</span> and Purvil Patel
               </div>
             </div>
             
@@ -232,6 +233,15 @@ export default function ReschedulePage() {
             </div>
           </div>
         </div>
+        
+        <div className="mt-8">
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 border border-slate-300 text-slate-700 font-bold rounded-full hover:border-slate-400 transition-colors"
+          >
+            Return to home page
+          </button>
+        </div>
       </div>
     );
   }
@@ -241,7 +251,7 @@ export default function ReschedulePage() {
       {/* Left panel: Event Details */}
       <div className="w-full md:w-[35%] bg-slate-50/50 p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 relative">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Reschedule Event</h2>
-        <p className="text-slate-500 font-medium text-sm mb-6">Demo User</p>
+        <p className="text-slate-500 font-medium text-sm mb-6">Purvil Patel</p>
         
         <div className="space-y-4 mb-6">
           <div className="flex items-start text-slate-600 font-medium">
@@ -305,7 +315,7 @@ export default function ReschedulePage() {
           
           {loadingSlots && (
             <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center">
-              Loading availability...
+              <Loader className="h-12" />
             </div>
           )}
         </div>

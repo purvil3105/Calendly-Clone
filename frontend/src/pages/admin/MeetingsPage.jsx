@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatDateTimeDisplay } from "@/lib/time";
 import { meetingsAPI } from "@/lib/api";
+import Loader from "../../components/ui/Loader";
 import { toast } from "sonner";
 import { CalendarX2, Users, Clock, AlignLeft } from "lucide-react";
 
@@ -129,7 +130,7 @@ export default function MeetingsPage() {
     );
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64">Loading...</div>;
+  if (loading) return <Loader />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
