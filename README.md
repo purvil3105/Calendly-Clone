@@ -402,10 +402,10 @@ npm run dev
 
 ## 🚀 Deployment
 
-| Component | Service | Notes |
-|-----------|---------|-------|
-| Frontend | Vercel | `npm run build`, set `VITE_API_URL` |
-| Backend | Render / Railway | Web service, set env vars |
+| Component | Service | Notes | Links |
+|-----------|---------|-------|--------|
+| Frontend | Vercel | `npm run build`, set `VITE_API_URL` | https://calendly-clone-nine-omega.vercel.app |
+| Backend | Render / Railway | Web service, set env vars | https://calendly-clone-1euv.onrender.com |
 | Database | Neon / Supabase | Free Postgres, copy `DATABASE_URL` |
 
 **Production CORS:** Set `FRONTEND_ORIGIN` to your Vercel deployment URL.
