@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { availabilityAPI } from "@/lib/api";
 import { TIMEZONE_OPTIONS, getDayName } from "@/lib/time";
 import { toast } from "sonner";
-import { Plus, Trash2, Globe, Clock, Check, Calendar as CalendarIcon, ExternalLink, Settings } from "lucide-react";
+import { Plus, Trash2, Globe, Clock, Check, Calendar as CalendarIcon, ExternalLink, Settings, CalendarDays, Save, CalendarOff, CalendarClock } from "lucide-react";
 import Loader from "../../components/ui/Loader";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];

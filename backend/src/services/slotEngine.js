@@ -64,20 +64,38 @@ exports.generateSlotsForRange = ({
         continue;
       }
 
-      const hasConflict = existingMeetings.some(meeting => {
+      const capacity = eventType.capacity || 1;
+      let isBlocked = false;
+      let bookedSpotsForThisSlot = 0;
+
+      for (const meeting of existingMeetings) {
         const mStart = DateTime.fromJSDate(meeting.startAt).minus({ minutes: meeting.eventType?.bufferBefore || 0 });
         const mEnd = DateTime.fromJSDate(meeting.endAt).plus({ minutes: meeting.eventType?.bufferAfter || 0 });
         
         const sStart = currentSlotStart.minus({ minutes: eventType?.bufferBefore || 0 });
         const sEnd = currentSlotEnd.plus({ minutes: eventType?.bufferAfter || 0 });
         
-        return sStart < mEnd && sEnd > mStart;
-      });
+        if (sStart < mEnd && sEnd > mStart) {
+          const isExactSameGroupSlot = (
+            meeting.eventTypeId === eventType.id &&
+            DateTime.fromJSDate(meeting.startAt).toMillis() === currentSlotStart.toMillis()
+          );
 
-      if (!hasConflict) {
+          if (isExactSameGroupSlot) {
+            bookedSpotsForThisSlot++;
+          } else {
+            isBlocked = true;
+            break;
+          }
+        }
+      }
+
+      if (!isBlocked && bookedSpotsForThisSlot < capacity) {
         slots.push({
           start: currentSlotStart.toISO(),
-          end: currentSlotEnd.toISO()
+          end: currentSlotEnd.toISO(),
+          spotsLeft: capacity - bookedSpotsForThisSlot,
+          capacity: capacity
         });
       }
 

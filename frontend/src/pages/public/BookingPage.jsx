@@ -171,9 +171,14 @@ export default function BookingPage() {
                   setSelectedSlot(slot);
                   setBookingStep(2);
                 }}
-                className="w-full py-3 border border-blue-200 rounded-md text-blue-600 font-bold hover:border-blue-600 hover:bg-blue-50 transition-all text-sm"
+                className="w-full py-3 border border-blue-200 rounded-md text-blue-600 font-bold hover:border-blue-600 hover:bg-blue-50 transition-all text-sm flex flex-col items-center justify-center gap-0.5"
               >
-                {timeStr}
+                <span>{timeStr}</span>
+                {slot.capacity > 1 && (
+                  <span className="text-xs font-normal text-slate-500">
+                    {slot.spotsLeft} spot{slot.spotsLeft !== 1 ? 's' : ''} left
+                  </span>
+                )}
               </button>
             );
           })}

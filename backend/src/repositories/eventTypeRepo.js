@@ -42,6 +42,7 @@ class EventTypeRepository {
         description: data.description,
         bufferBefore: data.buffer_before || 0,
         bufferAfter: data.buffer_after || 0,
+        capacity: data.capacity || 1,
         customQuestions: data.custom_questions || [],
       }
     });
@@ -55,6 +56,7 @@ class EventTypeRepository {
       description: data.description,
       bufferBefore: data.buffer_before || 0,
       bufferAfter: data.buffer_after || 0,
+      capacity: data.capacity || 1,
       customQuestions: data.custom_questions || [],
     };
     if (data.schedule_id) {

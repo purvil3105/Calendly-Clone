@@ -41,6 +41,8 @@ class MeetingRepository {
         status: 'confirmed'
       },
       select: {
+        id: true,
+        eventTypeId: true,
         startAt: true,
         endAt: true,
         eventType: { select: { bufferBefore: true, bufferAfter: true } }
@@ -48,10 +50,10 @@ class MeetingRepository {
     });
   }
 
-  async findConflicting(eventTypeId, startAt, endAt) {
-    return prisma.meeting.findFirst({
+  async findOverlappingHostMeetings(userId, startAt, endAt) {
+    return prisma.meeting.findMany({
       where: {
-        eventTypeId,
+        eventType: { userId: userId },
         status: 'confirmed',
         OR: [
           { startAt: { lt: endAt }, endAt: { gt: startAt } }

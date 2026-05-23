@@ -9,11 +9,24 @@ exports.bookMeeting = async (eventType, bookingData) => {
   const startDate = startDt.toJSDate();
   const endDate = endDt.toJSDate();
 
-  // 1. Verify concurrency / double-booking
-  const conflict = await meetingRepo.findConflicting(eventType.id, startDate, endDate);
+  // 1. Verify concurrency / double-booking / capacity
+  const overlappingMeetings = await meetingRepo.findOverlappingHostMeetings(eventType.userId, startDate, endDate);
   
-  if (conflict) {
-    throw new Error("This time slot is no longer available.");
+  const capacity = eventType.capacity || 1;
+  let bookedSpotsForThisSlot = 0;
+
+  for (const m of overlappingMeetings) {
+    // If it's the exact same event type and start time, it counts towards capacity
+    if (m.eventTypeId === eventType.id && m.startAt.getTime() === startDate.getTime()) {
+      bookedSpotsForThisSlot++;
+    } else {
+      // It's a different meeting entirely, host is blocked
+      throw new Error("This time slot is no longer available.");
+    }
+  }
+
+  if (bookedSpotsForThisSlot >= capacity) {
+    throw new Error("This event is fully booked.");
   }
 
   // 2. Create the meeting
@@ -47,11 +60,24 @@ exports.rescheduleMeeting = async (meetingId, newStartAtISO) => {
   const endDate = endDt.toJSDate();
 
   // Verify conflict
-  const conflict = await meetingRepo.findConflicting(eventType.id, startDate, endDate);
+  const overlappingMeetings = await meetingRepo.findOverlappingHostMeetings(eventType.userId, startDate, endDate);
   
-  // Ignore conflict if it's the SAME meeting
-  if (conflict && conflict.id !== meetingId) {
-    throw new Error("This time slot is no longer available.");
+  const capacity = eventType.capacity || 1;
+  let bookedSpotsForThisSlot = 0;
+
+  for (const m of overlappingMeetings) {
+    // Ignore the meeting itself if we are just rescheduling to a slot it already holds (though technically start date changed)
+    if (m.id === meetingId) continue;
+    
+    if (m.eventTypeId === eventType.id && m.startAt.getTime() === startDate.getTime()) {
+      bookedSpotsForThisSlot++;
+    } else {
+      throw new Error("This time slot is no longer available.");
+    }
+  }
+
+  if (bookedSpotsForThisSlot >= capacity) {
+    throw new Error("This event is fully booked.");
   }
 
   const updatedMeeting = await meetingRepo.reschedule(meetingId, startDate, endDate);

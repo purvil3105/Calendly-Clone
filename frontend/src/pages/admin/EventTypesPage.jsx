@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Clock, Copy, Edit, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Clock, Copy, Edit, Trash2, ExternalLink, Users } from "lucide-react";
 import { eventTypesAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -109,9 +109,23 @@ export default function EventTypesPage() {
                 </div>
                 <div className="text-sm text-slate-500 font-mono mb-4">/{event.slug}</div>
                 
-                <div className="flex items-center text-slate-600 font-medium text-sm">
-                  <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                  {event.durationMin} mins
+                <div className="flex gap-4">
+                  <div className="flex items-center text-slate-600 font-medium text-sm">
+                    <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                    {event.durationMin} mins
+                  </div>
+                  {event.capacity > 1 && (
+                    <div className="flex items-center text-slate-600 font-medium text-sm">
+                      <Users className="w-4 h-4 mr-2 text-slate-400" />
+                      Group: {event.capacity} max
+                    </div>
+                  )}
+                  {(!event.capacity || event.capacity === 1) && (
+                    <div className="flex items-center text-slate-600 font-medium text-sm">
+                      <Users className="w-4 h-4 mr-2 text-slate-400" />
+                      1-on-1
+                    </div>
+                  )}
                 </div>
                 {event.description && (
                   <p className="text-sm text-slate-500 line-clamp-2 mt-3">{event.description}</p>

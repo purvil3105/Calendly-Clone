@@ -14,6 +14,7 @@ export function EventTypeDialog({ isOpen, onClose, onSuccess, initialData }) {
     schedule_id: "",
     buffer_before: "0",
     buffer_after: "0",
+    capacity: "1",
     custom_questions: [],
   });
   
@@ -42,6 +43,7 @@ export function EventTypeDialog({ isOpen, onClose, onSuccess, initialData }) {
           schedule_id: initialData.scheduleId || "",
           buffer_before: String(initialData.bufferBefore || 0),
           buffer_after: String(initialData.bufferAfter || 0),
+          capacity: String(initialData.capacity || 1),
           custom_questions: initialData.customQuestions || [],
         });
       } else {
@@ -53,6 +55,7 @@ export function EventTypeDialog({ isOpen, onClose, onSuccess, initialData }) {
           schedule_id: "",
           buffer_before: "0",
           buffer_after: "0",
+          capacity: "1",
           custom_questions: [],
         });
       }
@@ -114,6 +117,7 @@ export function EventTypeDialog({ isOpen, onClose, onSuccess, initialData }) {
         duration_min: parseInt(formData.duration_min, 10),
         buffer_before: parseInt(formData.buffer_before, 10) || 0,
         buffer_after: parseInt(formData.buffer_after, 10) || 0,
+        capacity: parseInt(formData.capacity, 10) || 1,
       };
 
       if (isEditing) {
@@ -194,6 +198,21 @@ export function EventTypeDialog({ isOpen, onClose, onSuccess, initialData }) {
               <option value="90">90 minutes</option>
               <option value="120">2 hours</option>
             </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="capacity" className="text-sm font-medium text-slate-900">Max Invitee Capacity</label>
+            <input 
+              id="capacity" 
+              name="capacity" 
+              type="number"
+              min="1"
+              value={formData.capacity} 
+              onChange={handleChange} 
+              required 
+              className="w-full p-2.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-500">Enter '1' for a 1-on-1 meeting, or a higher number for group events.</p>
           </div>
 
           <div className="flex gap-4">

@@ -49,15 +49,39 @@ export default function MeetingsPage() {
 
   const getLocalTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const MeetingCard = ({ meeting, isPast = false }) => {
-    const isCancelled = meeting.status === "cancelled";
+  const groupMeetings = (meetingsList) => {
+    const groupsMap = new Map();
+    meetingsList.forEach(m => {
+      const key = `${m.eventTypeId}_${new Date(m.startAt).getTime()}`;
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          id: key,
+          eventTypeId: m.eventTypeId,
+          eventType: m.eventType,
+          startAt: m.startAt,
+          endAt: m.endAt,
+          attendees: []
+        });
+      }
+      groupsMap.get(key).attendees.push({
+        id: m.id,
+        name: m.inviteeName,
+        email: m.inviteeEmail,
+        notes: m.notes,
+        status: m.status
+      });
+    });
+    return Array.from(groupsMap.values());
+  };
+
+  const MeetingCard = ({ group, isPast = false }) => {
+    const isCancelled = group.attendees.every(a => a.status === "cancelled");
     const tz = getLocalTimezone();
-    const [datePart, timePart] = formatDateTimeDisplay(meeting.startAt, tz).split('·');
-    const endTimePart = formatDateTimeDisplay(meeting.endAt, tz).split('·')[1].trim();
+    const [datePart, timePart] = formatDateTimeDisplay(group.startAt, tz).split('·');
+    const endTimePart = formatDateTimeDisplay(group.endAt, tz).split('·')[1].trim();
     
     return (
-      <div className={`mb-4 overflow-hidden bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col md:flex-row ${isCancelled ? "opacity-75 bg-slate-50" : ""}`}>
-        {/* Left colored bar & date area */}
+      <div className={`mb-4 overflow-hidden bg-white border border-slate-200 border-l-[6px] rounded-xl shadow-sm flex flex-col md:flex-row ${isCancelled ? "opacity-75 bg-slate-50 border-l-red-500" : "border-l-purple-500"}`}>
         <div className={`p-6 flex flex-col justify-center items-start md:w-64 border-b md:border-b-0 md:border-r border-slate-100 ${
           isCancelled ? "bg-red-50/50" : isPast ? "bg-slate-50" : "bg-blue-50/50"
         }`}>
@@ -74,57 +98,69 @@ export default function MeetingsPage() {
           )}
         </div>
         
-        {/* Right details area */}
-        <div className="p-6 flex-1 flex flex-col sm:flex-row justify-between gap-4">
-          <div className="space-y-3 flex-1">
-            <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-900">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              {meeting.eventType.name}
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-slate-400" />
-                <span className="font-medium text-slate-900">{meeting.inviteeName}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <a href={`mailto:${meeting.inviteeEmail}`} className="text-blue-600 hover:underline">
-                  {meeting.inviteeEmail}
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
+        <div className="p-6 flex-1 flex flex-col gap-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-start">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-900">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                {group.eventType.name}
+              </h3>
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <Clock className="w-4 h-4 text-slate-400" />
-                <span>{meeting.eventType.durationMin} minutes</span>
+                <span>{group.eventType.durationMin} mins</span>
               </div>
             </div>
-
-            {meeting.notes && (
-              <div className="mt-4 bg-slate-50 p-3 rounded-md border border-slate-100 text-sm flex gap-3 items-start">
-                <AlignLeft className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                <p className="text-slate-700">{meeting.notes}</p>
+            
+            <div className="mt-4 space-y-3">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                {group.attendees.length} {group.attendees.length === 1 ? 'Invitee' : 'Invitees'}
               </div>
-            )}
+              
+              {group.attendees.map(attendee => (
+                <div key={attendee.id} className={`p-4 rounded-lg border ${attendee.status === 'cancelled' ? 'bg-red-50/30 border-red-100' : 'bg-slate-50 border-slate-100'} flex flex-col sm:flex-row justify-between gap-4`}>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-slate-400" />
+                      <span className={`font-medium ${attendee.status === 'cancelled' ? 'text-slate-500 line-through' : 'text-slate-900'}`}>{attendee.name}</span>
+                      {attendee.status === 'cancelled' && (
+                        <span className="ml-2 text-xs font-medium text-red-600 border border-red-200 bg-white px-2 py-0.5 rounded-full">Cancelled</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a href={`mailto:${attendee.email}`} className="text-blue-600 hover:underline text-sm">
+                        {attendee.email}
+                      </a>
+                    </div>
+                    {attendee.notes && (
+                      <div className="mt-2 text-sm flex gap-2 items-start text-slate-600">
+                        <AlignLeft className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                        <p>{attendee.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {!isPast && attendee.status !== 'cancelled' && (
+                    <div className="flex sm:flex-col justify-start sm:justify-center gap-2 shrink-0">
+                      <a 
+                        href={`/reschedule/${attendee.id}`}
+                        target="_blank"
+                        className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-md hover:bg-white text-xs font-medium transition-colors text-center bg-transparent"
+                      >
+                        Reschedule
+                      </a>
+                      <button 
+                        onClick={() => handleCancel(attendee.id)}
+                        disabled={cancellingId === attendee.id}
+                        className="px-3 py-1.5 border border-red-200 text-red-600 rounded-md hover:bg-white text-xs font-medium transition-colors disabled:opacity-50 bg-transparent"
+                      >
+                        {cancellingId === attendee.id ? "Cancelling..." : "Cancel"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Actions */}
-          {!isPast && !isCancelled && (
-            <div className="flex flex-col justify-start gap-2">
-              <a 
-                href={`/reschedule/${meeting.id}`}
-                target="_blank"
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 text-sm font-medium transition-colors text-center"
-              >
-                Reschedule
-              </a>
-              <button 
-                onClick={() => handleCancel(meeting.id)}
-                disabled={cancellingId === meeting.id}
-                className="px-4 py-2 border border-red-200 text-red-600 rounded-md hover:bg-red-50 text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {cancellingId === meeting.id ? "Cancelling..." : "Cancel"}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -164,8 +200,8 @@ export default function MeetingsPage() {
             {upcoming.length === 0 ? (
               <EmptyState message="You have no upcoming meetings." />
             ) : (
-              upcoming.map((meeting) => (
-                <MeetingCard key={meeting.id} meeting={meeting} />
+              groupMeetings(upcoming).map((group) => (
+                <MeetingCard key={group.id} group={group} />
               ))
             )}
           </div>
@@ -176,8 +212,8 @@ export default function MeetingsPage() {
             {past.length === 0 ? (
               <EmptyState message="You have no past meetings." />
             ) : (
-              past.map((meeting) => (
-                <MeetingCard key={meeting.id} meeting={meeting} isPast={true} />
+              groupMeetings(past).map((group) => (
+                <MeetingCard key={group.id} group={group} isPast={true} />
               ))
             )}
           </div>

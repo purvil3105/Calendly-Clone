@@ -14,6 +14,7 @@ const eventTypeSchema = z.object({
     type: z.enum(['text', 'textarea']),
     required: z.boolean(),
   })).optional(),
+  capacity: z.number().int().min(1).optional().default(1),
 });
 
 module.exports = {
