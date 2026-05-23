@@ -11,11 +11,14 @@ class EmailService {
   init() {
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
-        }
+        },
+        family: 4 // Force IPv4 resolution to bypass IPv6 ENETUNREACH errors on free hosts
       });
       this.isReal = true;
       console.log("Email service initialized (Nodemailer)");

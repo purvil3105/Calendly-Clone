@@ -15,6 +15,7 @@ const eventTypeSchema = z.object({
     required: z.boolean(),
   })).optional(),
   capacity: z.number().int().min(1).optional().default(1),
+  schedule_id: z.string().optional(),
 });
 
 module.exports = {
