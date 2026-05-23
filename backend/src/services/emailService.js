@@ -1,26 +1,30 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    this.resend = null;
+    this.transporter = null;
     this.isReal = false;
     this.init();
   }
 
   init() {
-    if (process.env.RESEND_API_KEY) {
-      this.resend = new Resend(process.env.RESEND_API_KEY);
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
       this.isReal = true;
-      console.log("Email service initialized (Resend API)");
+      console.log("Email service initialized (Nodemailer)");
     } else {
-      console.log("Email service initialized (Mock Mode - No RESEND_API_KEY provided)");
+      console.log("Email service initialized (Mock Mode - No EMAIL_USER/EMAIL_PASS provided)");
     }
   }
 
-  // NOTE: Resend requires a verified domain to send from (e.g. 'onboarding@resend.dev' for testing)
-  // For production, you will need to add and verify your own domain in Resend.
   getFromEmail() {
-    return process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    return `"Calendly Clone" <${process.env.EMAIL_USER || 'mock@example.com'}>`;
   }
 
   async sendBookingConfirmation(meeting, eventType) {
@@ -30,8 +34,8 @@ class EmailService {
     }
 
     try {
-      const data = await this.resend.emails.send({
-        from: `Calendly Clone <${this.getFromEmail()}>`,
+      const info = await this.transporter.sendMail({
+        from: this.getFromEmail(),
         to: meeting.inviteeEmail,
         subject: `Confirmed: ${eventType.name} with Demo User`,
         text: `Your meeting has been scheduled for ${meeting.startAt}.\n\nTo reschedule, visit: http://localhost:3001/reschedule/${meeting.id}`,
@@ -44,9 +48,9 @@ class EmailService {
           <p>If you need to reschedule, <a href="http://localhost:3001/reschedule/${meeting.id}">click here</a>.</p>
         `,
       });
-      console.log("Booking email sent via Resend. ID:", data.id);
+      console.log("Booking email sent via Nodemailer. Message ID:", info.messageId);
     } catch (error) {
-      console.error("Failed to send booking email via Resend:", error);
+      console.error("Failed to send booking email via Nodemailer:", error);
     }
   }
 
@@ -57,8 +61,8 @@ class EmailService {
     }
 
     try {
-      const data = await this.resend.emails.send({
-        from: `Calendly Clone <${this.getFromEmail()}>`,
+      const info = await this.transporter.sendMail({
+        from: this.getFromEmail(),
         to: meeting.inviteeEmail,
         subject: `Rescheduled: ${eventType.name} with Demo User`,
         text: `Your meeting has been rescheduled to ${meeting.startAt}.\n\nTo reschedule again, visit: http://localhost:3001/reschedule/${meeting.id}`,
@@ -71,9 +75,9 @@ class EmailService {
           <p>If you need to reschedule, <a href="http://localhost:3001/reschedule/${meeting.id}">click here</a>.</p>
         `,
       });
-      console.log("Reschedule email sent via Resend. ID:", data.id);
+      console.log("Reschedule email sent via Nodemailer. Message ID:", info.messageId);
     } catch (error) {
-      console.error("Failed to send reschedule email via Resend:", error);
+      console.error("Failed to send reschedule email via Nodemailer:", error);
     }
   }
 
@@ -84,8 +88,8 @@ class EmailService {
     }
 
     try {
-      const data = await this.resend.emails.send({
-        from: `Calendly Clone <${this.getFromEmail()}>`,
+      const info = await this.transporter.sendMail({
+        from: this.getFromEmail(),
         to: meeting.inviteeEmail,
         subject: `Cancelled: ${eventType.name} with Demo User`,
         text: `Your meeting scheduled for ${meeting.startAt} has been cancelled.`,
@@ -94,9 +98,9 @@ class EmailService {
           <p>Your meeting <strong>${eventType.name}</strong> with Demo User has been cancelled.</p>
         `,
       });
-      console.log("Cancellation email sent via Resend. ID:", data.id);
+      console.log("Cancellation email sent via Nodemailer. Message ID:", info.messageId);
     } catch (error) {
-      console.error("Failed to send cancellation email via Resend:", error);
+      console.error("Failed to send cancellation email via Nodemailer:", error);
     }
   }
 }
