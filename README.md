@@ -25,10 +25,12 @@ A full-stack scheduling and availability management application built as a clone
 
 ### Core Functionality
 - **Event Types Management** — Create, edit, and delete event types with custom URLs, durations, and descriptions.
+- **Group Events & Capacity** — Allow multiple invitees to book the same time slot by defining a custom maximum capacity per event type.
+- **Multiple Schedules** — Create distinct schedules (e.g., Working Hours, Overtime Hours) and assign them to specific event types independently.
 - **Availability Rules** — Define your weekly recurring schedule (e.g., Mon–Fri 9:00 AM – 5:00 PM).
 - **Public Booking Page** — A timezone-aware public page where invitees can see available slots and book meetings.
-- **Meeting Dashboard** — View upcoming and past meetings, and cancel them.
-- **Concurrency Safety** — Transactional booking and database-level constraints prevent double-booking the same time slot.
+- **Meeting Dashboard** — View upcoming and past meetings beautifully grouped by time slot.
+- **Concurrency Safety** — Transactional booking and constraints prevent over-booking a time slot beyond its capacity.
 
 ### Bonus Features
 - **Buffer Times** — Automatically add padding before and after meetings.
@@ -39,73 +41,7 @@ A full-stack scheduling and availability management application built as a clone
 
 ---
 
-## 🏗️ High-Level Architecture
-
-```
-                ┌────────────────────────────────────────────┐
-                │                  USERS                     │
-                │  Admin (owner)        Invitee (public)     │
-                └─────────────┬──────────────────┬───────────┘
-                              │                  │
-                              ▼                  ▼
-                ┌────────────────────────────────────────────┐
-                │              FRONTEND (SPA)                │
-                │         React 18 + Vite + Tailwind         │
-                │                                            │
-                │   Admin Pages          Public Pages        │
-                │   - Event Types        - /:slug (booking)  │
-                │   - Availability       - /reschedule/:id   │
-                │   - Meetings                               │
-                └─────────────┬──────────────────────────────┘
-                              │  REST / JSON (Axios)
-                              ▼
-                ┌────────────────────────────────────────────┐
-                │            BACKEND API SERVER              │
-                │           Node.js + Express v5             │
-                │                                            │
-                │   Controllers → Services → Repositories    │
-                │   - Validation (Zod)                       │
-                │   - Timezone handling (Luxon)              │
-                │   - Slot generation engine                 │
-                │   - Concurrency-safe booking               │
-                └─────────────┬──────────────────────────────┘
-                              │  SQL (Prisma ORM)
-                              ▼
-                ┌────────────────────────────────────────────┐
-                │               POSTGRESQL                   │
-                │  users, schedules, event_types,            │
-                │  availability_rules, date_overrides,       │
-                │  meetings                                  │
-                └─────────────┬──────────────────────────────┘
-                              │
-                              ▼
-                ┌────────────────────────────────────────────┐
-                │       Email Service (Nodemailer)           │
-                └────────────────────────────────────────────┘
-```
-
-**Style:** 3-tier monolith. Single backend service, single DB. No auth (single seeded demo user).
-
----
-
 ## 🗄️ Database Schema
-
-### ER Diagram
-
-```
-┌─────────────┐ 1   *  ┌──────────────┐ 1   *  ┌──────────────────┐
-│   users     │────────│   schedules  │────────│availability_rules│
-└─────────────┘        └──────┬───────┘        └──────────────────┘
-       │ 1                    │ 1
-       │                      │ *
-       │ *             ┌──────▼──────────┐
-       │               │ date_overrides  │
-       │               └─────────────────┘
-       │
-       │ 1   *  ┌──────────────┐ 1   *  ┌──────────────┐
-       └────────│ event_types  │────────│   meetings   │
-                └──────────────┘        └──────────────┘
-```
 
 ### Tables
 
@@ -400,39 +336,6 @@ Base URL: `http://localhost:4000/api`
 /reschedule/:meetingId    → Reschedule an existing booking
 ```
 
-### Booking Page Component Hierarchy
-
-```
-<BookingPage slug=...>
-  ├── Left Panel: Event details (name, duration, selected time)
-  └── Right Panel (step-based):
-        Step 1: <MonthCalendar />     — highlights bookable dates
-                <TimeSlotList />      — shown after date selection
-        Step 2: <BookingForm />       — name, email, notes, custom Qs
-        Step 3: <ConfirmationCard />  — success screen
-```
-
----
-
-## 📋 Booking Flow (Sequence)
-
-```
-Invitee → Frontend              Backend                    DB
-  │                                 │                       │
-  ├─ GET /public/:slug ────────────►│ load event_type ─────►│
-  │◄─ event metadata ───────────────│◄──────────────────────│
-  │                                 │                       │
-  ├─ GET /slots?start=..&end=.. ───►│ slot algorithm       ►│
-  │◄─ [{ start, end }, ...] ────────│◄──────────────────────│
-  │                                 │                       │
-  ├─ POST /book ───────────────────►│ check conflict        │
-  │                                 │ INSERT meeting ──────►│
-  │◄─ 201 + meeting ────────────────│                       │
-  │  (success screen shown)         │ send email (async)    │
-```
-
----
-
 ## 🛠️ Local Setup Instructions
 
 ### Prerequisites
@@ -497,17 +400,6 @@ npm run dev
 
 ---
 
-## 🏗️ Assumptions Made
-
-1. **Authentication** — Bypassed as per assignment constraints. The system assumes a single default "Owner" user seeded into the database (`demo@calendly-clone.com`).
-2. **Timezones** — All dates/times are stored in **UTC**. Conversions to the host's or invitee's local timezone are handled dynamically by Luxon.
-3. **Slot granularity** — The slot generation algorithm steps forward in **15-minute increments** regardless of event duration, matching Calendly's behaviour.
-4. **Schedules** — Event types are linked to a named schedule (not directly to availability rules), allowing multiple schedules per user.
-5. **Meeting status** — Uses `scheduled` / `cancelled` (not `confirmed` from the original spec) to reflect implementation.
-6. **Email** — Runs in mock/log mode when `EMAIL_USER` / `EMAIL_PASS` env vars are absent; no crash on SMTP failure.
-
----
-
 ## 🚀 Deployment
 
 | Component | Service | Notes |
@@ -522,11 +414,17 @@ npm run dev
 
 ## 📸 Screenshots
 
-*(Add screenshots before submitting!)*
+### Booking Confirmed
+![Booking Confirmed](./screenshots/booking_confirmed.png)
 
-- **Admin — Event Types page**
-- **Admin — Availability editor**
-- **Public Booking Page (calendar view)**
-- **Public Booking Page (form step)**
-- **Booking Confirmation screen**
-- **Admin — Meetings dashboard**
+### Event Types Dashboard
+![Event Types](./screenshots/event_types.png)
+
+### Meetings Dashboard
+![Meetings Dashboard](./screenshots/meetings_dashboard.png)
+
+### Availability Editor
+![Availability Dashboard](./screenshots/availability_dashboard.png)
+
+### Adding an Event Type (Custom Schedule)
+![Add Event Type](./screenshots/add_event_type.png)
