@@ -415,16 +415,19 @@ npm run dev
 ## 📸 Screenshots
 
 ### Booking Confirmed
-![Booking Confirmed](./screenshots/booking_confirmed.png)
+![Booking Confirmed](./screenshots/Screenshot%20(645).png)
 
 ### Event Types Dashboard
-![Event Types](./screenshots/event_types.png)
+![Event Types](./screenshots/Screenshot%20(646).png)
 
 ### Meetings Dashboard
-![Meetings Dashboard](./screenshots/meetings_dashboard.png)
+![Meetings Dashboard](./screenshots/Screenshot%20(647).png)
 
 ### Availability Editor
-![Availability Dashboard](./screenshots/availability_dashboard.png)
+![Availability Dashboard](./screenshots/Screenshot%20(648).png)
 
 ### Adding an Event Type (Custom Schedule)
-![Add Event Type](./screenshots/add_event_type.png)
+![Add Event Type](./screenshots/Screenshot%20(649).png)
+
+### Booking Page (Calendar View)
+![Booking Page](./screenshots/Screenshot%20(650).png)
